@@ -32,7 +32,7 @@ Verify the installation:
 
 ```bash
 ossguard version
-# ossguard 0.1.1
+# ossguard 0.1.2
 ```
 
 See [installation.md](installation.md) for all six install methods and shell completions.

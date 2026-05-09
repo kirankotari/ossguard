@@ -107,7 +107,7 @@ Pre-built static binaries for Linux, macOS, and Windows are available on the [re
 ### macOS (Apple Silicon)
 
 ```bash
-curl -fsSL https://github.com/kirankotari/ossguard-go/releases/download/v0.1.1/ossguard-macos-arm64 -o ossguard
+curl -fsSL https://github.com/kirankotari/ossguard-go/releases/download/v0.1.2/ossguard-macos-arm64 -o ossguard
 chmod +x ossguard
 sudo mv ossguard /usr/local/bin/
 ```
@@ -115,7 +115,7 @@ sudo mv ossguard /usr/local/bin/
 ### macOS (Intel)
 
 ```bash
-curl -fsSL https://github.com/kirankotari/ossguard-go/releases/download/v0.1.1/ossguard-macos-amd64 -o ossguard
+curl -fsSL https://github.com/kirankotari/ossguard-go/releases/download/v0.1.2/ossguard-macos-amd64 -o ossguard
 chmod +x ossguard
 sudo mv ossguard /usr/local/bin/
 ```
@@ -123,7 +123,7 @@ sudo mv ossguard /usr/local/bin/
 ### Linux (x86_64)
 
 ```bash
-curl -fsSL https://github.com/kirankotari/ossguard-go/releases/download/v0.1.1/ossguard-linux-amd64 -o ossguard
+curl -fsSL https://github.com/kirankotari/ossguard-go/releases/download/v0.1.2/ossguard-linux-amd64 -o ossguard
 chmod +x ossguard
 sudo mv ossguard /usr/local/bin/
 ```
@@ -131,7 +131,7 @@ sudo mv ossguard /usr/local/bin/
 ### Linux (ARM64)
 
 ```bash
-curl -fsSL https://github.com/kirankotari/ossguard-go/releases/download/v0.1.1/ossguard-linux-arm64 -o ossguard
+curl -fsSL https://github.com/kirankotari/ossguard-go/releases/download/v0.1.2/ossguard-linux-arm64 -o ossguard
 chmod +x ossguard
 sudo mv ossguard /usr/local/bin/
 ```
@@ -146,19 +146,19 @@ ossguard version
 
 ```bash
 # Scan the current directory
-docker run --rm -v "$(pwd):/project" ghcr.io/kirankotari/ossguard-go:0.1.1 scan /project
+docker run --rm -v "$(pwd):/project" ghcr.io/kirankotari/ossguard-go:0.1.2 scan /project
 
 # Full audit
-docker run --rm -v "$(pwd):/project" ghcr.io/kirankotari/ossguard-go:0.1.1 audit /project
+docker run --rm -v "$(pwd):/project" ghcr.io/kirankotari/ossguard-go:0.1.2 audit /project
 
 # Bootstrap configs
-docker run --rm -v "$(pwd):/project" ghcr.io/kirankotari/ossguard-go:0.1.1 init /project
+docker run --rm -v "$(pwd):/project" ghcr.io/kirankotari/ossguard-go:0.1.2 init /project
 ```
 
 **Tip**: Create a shell alias for convenience:
 
 ```bash
-alias ossguard='docker run --rm -v "$(pwd):/project" ghcr.io/kirankotari/ossguard-go:0.1.1'
+alias ossguard='docker run --rm -v "$(pwd):/project" ghcr.io/kirankotari/ossguard-go:0.1.2'
 ossguard scan /project
 ```
 

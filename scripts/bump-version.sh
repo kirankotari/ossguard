@@ -9,6 +9,11 @@ VERSION="${1:?Usage: $0 <version>}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 PARENT="$(dirname "$ROOT")"
 
+# macOS-compatible in-place sed
+sedi() {
+  sed -i.bak "$@" && rm -f "${@: -1}.bak"
+}
+
 echo "Bumping all OSSGuard repos to version $VERSION"
 echo "================================================"
 
@@ -19,15 +24,15 @@ if [ -d "$PYTHON_DIR" ]; then
   echo "=== ossguard-python ==="
 
   # pyproject.toml
-  sed -i '' "s/^version = \".*\"/version = \"$VERSION\"/" "$PYTHON_DIR/pyproject.toml"
+  sedi "s/^version = \".*\"/version = \"$VERSION\"/" "$PYTHON_DIR/pyproject.toml"
   echo "  Updated pyproject.toml"
 
   # __init__.py
-  sed -i '' "s/__version__ = \".*\"/__version__ = \"$VERSION\"/" "$PYTHON_DIR/src/ossguard/__init__.py"
+  sedi "s/__version__ = \".*\"/__version__ = \"$VERSION\"/" "$PYTHON_DIR/src/ossguard/__init__.py"
   echo "  Updated __init__.py"
 
   # sbom_gen.py embedded version
-  sed -i '' "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$PYTHON_DIR/src/ossguard/analyzers/sbom_gen.py"
+  sedi "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$PYTHON_DIR/src/ossguard/analyzers/sbom_gen.py"
   echo "  Updated sbom_gen.py"
 else
   echo "SKIP: $PYTHON_DIR not found"
@@ -39,7 +44,7 @@ if [ -d "$GO_DIR" ]; then
   echo ""
   echo "=== ossguard-go ==="
 
-  sed -i '' "s/const version = \".*\"/const version = \"$VERSION\"/" "$GO_DIR/cmd/ossguard/main.go"
+  sedi "s/const version = \".*\"/const version = \"$VERSION\"/" "$GO_DIR/cmd/ossguard/main.go"
   echo "  Updated main.go"
 else
   echo "SKIP: $GO_DIR not found"
@@ -52,11 +57,11 @@ if [ -d "$NPM_DIR" ]; then
   echo "=== ossguard-npm ==="
 
   # package.json — update the top-level "version" field
-  sed -i '' "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$NPM_DIR/package.json"
+  sedi "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$NPM_DIR/package.json"
   echo "  Updated package.json"
 
   # src/index.ts
-  sed -i '' "s/VERSION = \".*\"/VERSION = \"$VERSION\"/" "$NPM_DIR/src/index.ts"
+  sedi "s/VERSION = \".*\"/VERSION = \"$VERSION\"/" "$NPM_DIR/src/index.ts"
   echo "  Updated src/index.ts"
 else
   echo "SKIP: $NPM_DIR not found"
@@ -67,12 +72,12 @@ echo ""
 echo "=== ossguard (docs) ==="
 
 # Update version references in install docs
-sed -i '' "s|ossguard-go:0\.[0-9]*\.[0-9]*|ossguard-go:$VERSION|g" "$ROOT/README.md"
-sed -i '' "s|ossguard-go:0\.[0-9]*\.[0-9]*|ossguard-go:$VERSION|g" "$ROOT/docs/installation.md"
-sed -i '' "s|ossguard-go:0\.[0-9]*\.[0-9]*|ossguard-go:$VERSION|g" "$ROOT/docs/ci-integration.md"
-sed -i '' "s|download/v0\.[0-9]*\.[0-9]*|download/v$VERSION|g" "$ROOT/README.md"
-sed -i '' "s|download/v0\.[0-9]*\.[0-9]*|download/v$VERSION|g" "$ROOT/docs/installation.md"
-sed -i '' "s|ossguard 0\.[0-9]*\.[0-9]*|ossguard $VERSION|g" "$ROOT/docs/getting-started.md"
+sedi "s|ossguard-go:0\.[0-9]*\.[0-9]*|ossguard-go:$VERSION|g" "$ROOT/README.md"
+sedi "s|ossguard-go:0\.[0-9]*\.[0-9]*|ossguard-go:$VERSION|g" "$ROOT/docs/installation.md"
+sedi "s|ossguard-go:0\.[0-9]*\.[0-9]*|ossguard-go:$VERSION|g" "$ROOT/docs/ci-integration.md"
+sedi "s|download/v0\.[0-9]*\.[0-9]*|download/v$VERSION|g" "$ROOT/README.md"
+sedi "s|download/v0\.[0-9]*\.[0-9]*|download/v$VERSION|g" "$ROOT/docs/installation.md"
+sedi "s|ossguard 0\.[0-9]*\.[0-9]*|ossguard $VERSION|g" "$ROOT/docs/getting-started.md"
 echo "  Updated docs version references"
 
 echo ""
