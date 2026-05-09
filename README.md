@@ -219,6 +219,7 @@ See [docs/implementations.md](docs/implementations.md) for a detailed comparison
 | [Architecture](docs/architecture.md) | How OSSGuard works internally |
 | [CI Integration](docs/ci-integration.md) | GitHub Actions, GitLab CI examples |
 | [Implementations](docs/implementations.md) | Python vs Go vs Node.js comparison |
+| [Releasing](docs/releasing.md) | Coordinated release process |
 | [FAQ](docs/faq.md) | Frequently asked questions |
 
 ## How OSSGuard Relates to OpenSSF
