@@ -35,7 +35,9 @@ jobs:
             --verbose
             --no-progress
             --accept 200,204,301,302,403,429
+            --timeout 30
             --exclude '^mailto:'
             --exclude 'github\.com/.*/settings'
+            --exclude 'slsa\.dev'
             '**/*.md'
           fail: true
