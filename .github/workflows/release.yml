@@ -67,10 +67,14 @@ jobs:
             git push origin main
           }
 
-          # Tag the new HEAD
-          git tag -a "$TAG" -m "Release $VERSION (coordinated from ossguard)"
-          git push origin "$TAG"
-          echo "  Tagged $REPO with $TAG"
+          # Tag the new HEAD (skip if already exists)
+          if git ls-remote --tags origin "$TAG" | grep -q "$TAG"; then
+            echo "  Tag $TAG already exists on $REPO — skipping"
+          else
+            git tag -a "$TAG" -m "Release $VERSION (coordinated from ossguard)"
+            git push origin "$TAG"
+            echo "  Tagged $REPO with $TAG"
+          fi
 
       - name: Bump ossguard-go
         env:
@@ -95,9 +99,13 @@ jobs:
             git push origin main
           }
 
-          git tag -a "$TAG" -m "Release $VERSION (coordinated from ossguard)"
-          git push origin "$TAG"
-          echo "  Tagged $REPO with $TAG"
+          if git ls-remote --tags origin "$TAG" | grep -q "$TAG"; then
+            echo "  Tag $TAG already exists on $REPO — skipping"
+          else
+            git tag -a "$TAG" -m "Release $VERSION (coordinated from ossguard)"
+            git push origin "$TAG"
+            echo "  Tagged $REPO with $TAG"
+          fi
 
       - name: Bump ossguard-npm
         env:
@@ -125,9 +133,13 @@ jobs:
             git push origin main
           }
 
-          git tag -a "$TAG" -m "Release $VERSION (coordinated from ossguard)"
-          git push origin "$TAG"
-          echo "  Tagged $REPO with $TAG"
+          if git ls-remote --tags origin "$TAG" | grep -q "$TAG"; then
+            echo "  Tag $TAG already exists on $REPO — skipping"
+          else
+            git tag -a "$TAG" -m "Release $VERSION (coordinated from ossguard)"
+            git push origin "$TAG"
+            echo "  Tagged $REPO with $TAG"
+          fi
 
   create-release:
     name: Create Umbrella Release
