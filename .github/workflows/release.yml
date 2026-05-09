@@ -14,6 +14,9 @@ jobs:
     outputs:
       version: ${{ steps.parse.outputs.version }}
       tag: ${{ steps.parse.outputs.tag }}
+      py_version: ${{ steps.parse.outputs.py_version }}
+      py_tag: ${{ steps.parse.outputs.py_tag }}
+      is_prerelease: ${{ steps.parse.outputs.is_prerelease }}
     steps:
       - name: Parse version from tag
         id: parse
@@ -24,10 +27,33 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Tag: $TAG, Version: $VERSION"
 
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
-            echo "::error::Invalid semver: $VERSION"
+          # Validate semver format (with optional pre-release)
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.]?[a-zA-Z0-9.]+)?$ ]]; then
+            echo "::error::Invalid version: $VERSION"
             exit 1
           fi
+
+          # Convert semver pre-release to PEP 440 for Python
+          # e.g. 0.1.4-alpha.1 -> 0.1.4a1, 0.1.4-beta.2 -> 0.1.4b2, 0.1.4-rc.1 -> 0.1.4rc1
+          PY_VERSION="$VERSION"
+          IS_PRERELEASE="false"
+          if [[ "$VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-alpha\.?([0-9]*)$ ]]; then
+            PY_VERSION="${BASH_REMATCH[1]}a${BASH_REMATCH[2]:-1}"
+            IS_PRERELEASE="true"
+          elif [[ "$VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-beta\.?([0-9]*)$ ]]; then
+            PY_VERSION="${BASH_REMATCH[1]}b${BASH_REMATCH[2]:-1}"
+            IS_PRERELEASE="true"
+          elif [[ "$VERSION" =~ ^([0-9]+\.[0-9]+\.[0-9]+)-rc\.?([0-9]*)$ ]]; then
+            PY_VERSION="${BASH_REMATCH[1]}rc${BASH_REMATCH[2]:-1}"
+            IS_PRERELEASE="true"
+          fi
+
+          PY_TAG="v${PY_VERSION}"
+          echo "py_version=$PY_VERSION" >> "$GITHUB_OUTPUT"
+          echo "py_tag=$PY_TAG" >> "$GITHUB_OUTPUT"
+          echo "is_prerelease=$IS_PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "Python version: $PY_VERSION (tag: $PY_TAG)"
+          echo "Pre-release: $IS_PRERELEASE"
 
   bump-and-tag:
     name: Bump Versions & Tag Repos
@@ -39,41 +65,33 @@ jobs:
       - name: Bump ossguard-python
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          VERSION: ${{ needs.validate-tag.outputs.version }}
-          TAG: ${{ needs.validate-tag.outputs.tag }}
+          PY_VERSION: ${{ needs.validate-tag.outputs.py_version }}
+          PY_TAG: ${{ needs.validate-tag.outputs.py_tag }}
         run: |
           REPO="kirankotari/ossguard-python"
-          echo "=== Bumping $REPO to $VERSION ==="
+          echo "=== Bumping $REPO to $PY_VERSION (tag: $PY_TAG) ==="
 
-          # Clone the repo
           git clone "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" /tmp/ossguard-python
           cd /tmp/ossguard-python
 
-          # Bump pyproject.toml
-          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
+          sed -i "s/^version = \".*\"/version = \"$PY_VERSION\"/" pyproject.toml
+          sed -i "s/__version__ = \".*\"/__version__ = \"$PY_VERSION\"/" src/ossguard/__init__.py
+          sed -i "s/\"version\": \".*\"/\"version\": \"$PY_VERSION\"/" src/ossguard/analyzers/sbom_gen.py
 
-          # Bump __init__.py
-          sed -i "s/__version__ = \".*\"/__version__ = \"$VERSION\"/" src/ossguard/__init__.py
-
-          # Bump sbom_gen.py embedded version
-          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src/ossguard/analyzers/sbom_gen.py
-
-          # Commit and push
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git diff --cached --quiet && echo "No changes" || {
-            git commit -m "chore: bump version to $VERSION"
+            git commit -m "chore: bump version to $PY_VERSION"
             git push origin main
           }
 
-          # Tag the new HEAD (skip if already exists)
-          if git ls-remote --tags origin "$TAG" | grep -q "$TAG"; then
-            echo "  Tag $TAG already exists on $REPO — skipping"
+          if git ls-remote --tags origin "$PY_TAG" | grep -q "$PY_TAG"; then
+            echo "  Tag $PY_TAG already exists — skipping"
           else
-            git tag -a "$TAG" -m "Release $VERSION (coordinated from ossguard)"
-            git push origin "$TAG"
-            echo "  Tagged $REPO with $TAG"
+            git tag -a "$PY_TAG" -m "Release $PY_VERSION (coordinated from ossguard)"
+            git push origin "$PY_TAG"
+            echo "  Tagged $REPO with $PY_TAG"
           fi
 
       - name: Bump ossguard-go
@@ -88,7 +106,6 @@ jobs:
           git clone "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" /tmp/ossguard-go
           cd /tmp/ossguard-go
 
-          # Bump version constant in main.go
           sed -i "s/const version = \".*\"/const version = \"$VERSION\"/" cmd/ossguard/main.go
 
           git config user.name "github-actions[bot]"
@@ -100,7 +117,7 @@ jobs:
           }
 
           if git ls-remote --tags origin "$TAG" | grep -q "$TAG"; then
-            echo "  Tag $TAG already exists on $REPO — skipping"
+            echo "  Tag $TAG already exists — skipping"
           else
             git tag -a "$TAG" -m "Release $VERSION (coordinated from ossguard)"
             git push origin "$TAG"
@@ -119,10 +136,7 @@ jobs:
           git clone "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" /tmp/ossguard-npm
           cd /tmp/ossguard-npm
 
-          # Bump package.json version (top-level only)
           sed -i '0,/"version": ".*"/{s/"version": ".*"/"version": "'"$VERSION"'"/}' package.json
-
-          # Bump VERSION constant in src/index.ts
           sed -i "s/VERSION = \".*\"/VERSION = \"$VERSION\"/" src/index.ts
 
           git config user.name "github-actions[bot]"
@@ -134,7 +148,7 @@ jobs:
           }
 
           if git ls-remote --tags origin "$TAG" | grep -q "$TAG"; then
-            echo "  Tag $TAG already exists on $REPO — skipping"
+            echo "  Tag $TAG already exists — skipping"
           else
             git tag -a "$TAG" -m "Release $VERSION (coordinated from ossguard)"
             git push origin "$TAG"
@@ -155,7 +169,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.validate-tag.outputs.version }}
           TAG: ${{ needs.validate-tag.outputs.tag }}
+          PY_TAG: ${{ needs.validate-tag.outputs.py_tag }}
+          IS_PRERELEASE: ${{ needs.validate-tag.outputs.is_prerelease }}
         run: |
+          PRERELEASE_FLAG=""
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
           cat > release-notes.md << EOF
           ## OSSGuard ${VERSION}
 
@@ -174,7 +195,7 @@ jobs:
 
           | Implementation | Release | Package |
           |---------------|---------|---------|
-          | **Python** | [ossguard-python@${TAG}](https://github.com/kirankotari/ossguard-python/releases/tag/${TAG}) | [![PyPI](https://img.shields.io/pypi/v/ossguard)](https://pypi.org/project/ossguard/) |
+          | **Python** | [ossguard-python@${PY_TAG}](https://github.com/kirankotari/ossguard-python/releases/tag/${PY_TAG}) | [![PyPI](https://img.shields.io/pypi/v/ossguard)](https://pypi.org/project/ossguard/) |
           | **Go** | [ossguard-go@${TAG}](https://github.com/kirankotari/ossguard-go/releases/tag/${TAG}) | [![Release](https://img.shields.io/github/v/release/kirankotari/ossguard-go)](https://github.com/kirankotari/ossguard-go/releases) |
           | **Node.js** | [ossguard-npm@${TAG}](https://github.com/kirankotari/ossguard-npm/releases/tag/${TAG}) | [![npm](https://img.shields.io/npm/v/ossguard)](https://www.npmjs.com/package/ossguard) |
           EOF
@@ -182,4 +203,5 @@ jobs:
           gh release create "${TAG}" \
             --repo "${{ github.repository }}" \
             --title "OSSGuard ${VERSION}" \
-            --notes-file release-notes.md
+            --notes-file release-notes.md \
+            $PRERELEASE_FLAG
