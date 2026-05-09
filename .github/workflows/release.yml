@@ -169,6 +169,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.validate-tag.outputs.version }}
           TAG: ${{ needs.validate-tag.outputs.tag }}
+          PY_VERSION: ${{ needs.validate-tag.outputs.py_version }}
           PY_TAG: ${{ needs.validate-tag.outputs.py_tag }}
           IS_PRERELEASE: ${{ needs.validate-tag.outputs.is_prerelease }}
         run: |
@@ -195,9 +196,9 @@ jobs:
 
           | Implementation | Release | Package |
           |---------------|---------|---------|
-          | **Python** | [ossguard-python@${PY_TAG}](https://github.com/kirankotari/ossguard-python/releases/tag/${PY_TAG}) | [![PyPI](https://img.shields.io/pypi/v/ossguard)](https://pypi.org/project/ossguard/) |
-          | **Go** | [ossguard-go@${TAG}](https://github.com/kirankotari/ossguard-go/releases/tag/${TAG}) | [![Release](https://img.shields.io/github/v/release/kirankotari/ossguard-go)](https://github.com/kirankotari/ossguard-go/releases) |
-          | **Node.js** | [ossguard-npm@${TAG}](https://github.com/kirankotari/ossguard-npm/releases/tag/${TAG}) | [![npm](https://img.shields.io/npm/v/ossguard)](https://www.npmjs.com/package/ossguard) |
+          | **Python** | [ossguard-python@${PY_TAG}](https://github.com/kirankotari/ossguard-python/releases/tag/${PY_TAG}) | [PyPI ${PY_VERSION}](https://pypi.org/project/ossguard/${PY_VERSION}/) |
+          | **Go** | [ossguard-go@${TAG}](https://github.com/kirankotari/ossguard-go/releases/tag/${TAG}) | [Go ${VERSION}](https://pkg.go.dev/github.com/kirankotari/ossguard-go@${TAG}) |
+          | **Node.js** | [ossguard-npm@${TAG}](https://github.com/kirankotari/ossguard-npm/releases/tag/${TAG}) | [npm ${VERSION}](https://www.npmjs.com/package/ossguard/v/${VERSION}) |
           EOF
 
           gh release create "${TAG}" \
