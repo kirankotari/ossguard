@@ -6,7 +6,7 @@
 <p align="center">
   <a href="https://pypi.org/project/ossguard/"><img src="https://img.shields.io/pypi/v/ossguard" alt="PyPI"></a>
   <a href="https://www.npmjs.com/package/ossguard"><img src="https://img.shields.io/npm/v/ossguard" alt="npm"></a>
-  <a href="https://github.com/kirankotari/ossguard-go/releases"><img src="https://img.shields.io/github/v/release/kirankotari/ossguard-go" alt="Go Release"></a>
+  <a href="https://pkg.go.dev/github.com/kirankotari/ossguard-go"><img src="https://img.shields.io/github/v/release/kirankotari/ossguard-go?label=go" alt="Go"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-Apache_2.0-blue.svg" alt="License"></a>
 </p>
 

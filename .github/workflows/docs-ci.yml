@@ -36,5 +36,6 @@ jobs:
             --no-progress
             --accept 200,204,301,302,403,429
             --exclude '^mailto:'
+            --exclude 'github\.com/.*/settings'
             '**/*.md'
           fail: true
