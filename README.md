@@ -62,7 +62,7 @@ See the [Getting Started](docs/getting-started.md) guide for a full walkthrough.
 | **npm / npx** | `npx ossguard` | [details](docs/installation.md#npm--npx) |
 | **Go** | `go install github.com/kirankotari/ossguard-go/cmd/ossguard@latest` | [details](docs/installation.md#go) |
 | **Binary** | Download from [releases](https://github.com/kirankotari/ossguard-go/releases) | [details](docs/installation.md#binary-download) |
-| **Docker** | `docker run ghcr.io/kirankotari/ossguard-go:0.1.2` | [details](docs/installation.md#docker) |
+| **Docker** | `docker run ghcr.io/kirankotari/ossguard-go:0.1.3` | [details](docs/installation.md#docker) |
 
 See [docs/installation.md](docs/installation.md) for full instructions, shell completions, and verification steps.
 

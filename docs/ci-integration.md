@@ -108,7 +108,7 @@ jobs:
   ossguard:
     runs-on: ubuntu-latest
     container:
-      image: ghcr.io/kirankotari/ossguard-go:0.1.2
+      image: ghcr.io/kirankotari/ossguard-go:0.1.3
     steps:
       - uses: actions/checkout@v4
 
@@ -123,7 +123,7 @@ jobs:
 
 ```yaml
 ossguard:
-  image: ghcr.io/kirankotari/ossguard-go:0.1.2
+  image: ghcr.io/kirankotari/ossguard-go:0.1.3
   stage: test
   script:
     - ossguard scan --json . > scan.json
