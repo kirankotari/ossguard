@@ -7,10 +7,6 @@ on:
 
 permissions: read-all
 
-env:
-  # Repos to release in sync
-  REPOS: "kirankotari/ossguard-python kirankotari/ossguard-go kirankotari/ossguard-npm"
-
 jobs:
   validate-tag:
     name: Validate Tag
@@ -28,103 +24,150 @@ jobs:
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "Tag: $TAG, Version: $VERSION"
 
-          # Validate semver format
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
             echo "::error::Invalid semver: $VERSION"
             exit 1
           fi
 
-  tag-repos:
-    name: Tag Implementation Repos
+  bump-and-tag:
+    name: Bump Versions & Tag Repos
     runs-on: ubuntu-latest
     needs: validate-tag
-    permissions:
-      contents: read
     steps:
       - uses: actions/checkout@v4
 
-      - name: Create tags in implementation repos
+      - name: Bump ossguard-python
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          VERSION: ${{ needs.validate-tag.outputs.version }}
+          TAG: ${{ needs.validate-tag.outputs.tag }}
         run: |
-          TAG="${{ needs.validate-tag.outputs.tag }}"
-          VERSION="${{ needs.validate-tag.outputs.version }}"
+          REPO="kirankotari/ossguard-python"
+          echo "=== Bumping $REPO to $VERSION ==="
 
-          for REPO in $REPOS; do
-            echo "=== Tagging $REPO with $TAG ==="
+          # Clone the repo
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" /tmp/ossguard-python
+          cd /tmp/ossguard-python
 
-            # Get the latest commit SHA on main
-            SHA=$(gh api "repos/$REPO/git/ref/heads/main" --jq '.object.sha')
-            echo "  Latest commit: $SHA"
+          # Bump pyproject.toml
+          sed -i "s/^version = \".*\"/version = \"$VERSION\"/" pyproject.toml
 
-            # Create the tag object
-            TAG_SHA=$(gh api "repos/$REPO/git/tags" \
-              --method POST \
-              --field tag="$TAG" \
-              --field message="Release $VERSION (coordinated from ossguard)" \
-              --field object="$SHA" \
-              --field type="commit" \
-              --jq '.sha')
-            echo "  Tag object: $TAG_SHA"
+          # Bump __init__.py
+          sed -i "s/__version__ = \".*\"/__version__ = \"$VERSION\"/" src/ossguard/__init__.py
 
-            # Create the ref
-            gh api "repos/$REPO/git/refs" \
-              --method POST \
-              --field ref="refs/tags/$TAG" \
-              --field sha="$TAG_SHA" > /dev/null
-            echo "  Created refs/tags/$TAG"
-          done
+          # Bump sbom_gen.py embedded version
+          sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" src/ossguard/analyzers/sbom_gen.py
+
+          # Commit and push
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && echo "No changes" || {
+            git commit -m "chore: bump version to $VERSION"
+            git push origin main
+          }
+
+          # Tag the new HEAD
+          git tag -a "$TAG" -m "Release $VERSION (coordinated from ossguard)"
+          git push origin "$TAG"
+          echo "  Tagged $REPO with $TAG"
+
+      - name: Bump ossguard-go
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          VERSION: ${{ needs.validate-tag.outputs.version }}
+          TAG: ${{ needs.validate-tag.outputs.tag }}
+        run: |
+          REPO="kirankotari/ossguard-go"
+          echo "=== Bumping $REPO to $VERSION ==="
+
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" /tmp/ossguard-go
+          cd /tmp/ossguard-go
+
+          # Bump version constant in main.go
+          sed -i "s/const version = \".*\"/const version = \"$VERSION\"/" cmd/ossguard/main.go
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && echo "No changes" || {
+            git commit -m "chore: bump version to $VERSION"
+            git push origin main
+          }
+
+          git tag -a "$TAG" -m "Release $VERSION (coordinated from ossguard)"
+          git push origin "$TAG"
+          echo "  Tagged $REPO with $TAG"
+
+      - name: Bump ossguard-npm
+        env:
+          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+          VERSION: ${{ needs.validate-tag.outputs.version }}
+          TAG: ${{ needs.validate-tag.outputs.tag }}
+        run: |
+          REPO="kirankotari/ossguard-npm"
+          echo "=== Bumping $REPO to $VERSION ==="
+
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" /tmp/ossguard-npm
+          cd /tmp/ossguard-npm
+
+          # Bump package.json version (top-level only)
+          sed -i '0,/"version": ".*"/{s/"version": ".*"/"version": "'"$VERSION"'"/}' package.json
+
+          # Bump VERSION constant in src/index.ts
+          sed -i "s/VERSION = \".*\"/VERSION = \"$VERSION\"/" src/index.ts
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && echo "No changes" || {
+            git commit -m "chore: bump version to $VERSION"
+            git push origin main
+          }
+
+          git tag -a "$TAG" -m "Release $VERSION (coordinated from ossguard)"
+          git push origin "$TAG"
+          echo "  Tagged $REPO with $TAG"
 
   create-release:
     name: Create Umbrella Release
     runs-on: ubuntu-latest
-    needs: [validate-tag, tag-repos]
+    needs: [validate-tag, bump-and-tag]
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
 
-      - name: Generate release notes
-        id: notes
+      - name: Create GitHub Release
         env:
+          GH_TOKEN: ${{ github.token }}
           VERSION: ${{ needs.validate-tag.outputs.version }}
           TAG: ${{ needs.validate-tag.outputs.tag }}
         run: |
-          cat > release-notes.md << 'NOTES'
-          ## OSSGuard ${{ needs.validate-tag.outputs.version }}
+          cat > release-notes.md << EOF
+          ## OSSGuard ${VERSION}
 
           Coordinated release across all implementations.
 
           ### Install / Upgrade
 
-          ```bash
-          # Python
+          \`\`\`bash
           pip install --upgrade ossguard
-
-          # Homebrew
           brew upgrade ossguard
-
-          # npm
           npx ossguard@latest --help
-
-          # Go
-          go install github.com/kirankotari/ossguard-go/cmd/ossguard@${{ needs.validate-tag.outputs.tag }}
-          ```
+          go install github.com/kirankotari/ossguard-go/cmd/ossguard@${TAG}
+          \`\`\`
 
           ### Implementation Releases
 
-          | Implementation | Release | Status |
-          |---------------|---------|--------|
-          | **Python** | [ossguard-python@${{ needs.validate-tag.outputs.tag }}](https://github.com/kirankotari/ossguard-python/releases/tag/${{ needs.validate-tag.outputs.tag }}) | ![PyPI](https://img.shields.io/pypi/v/ossguard) |
-          | **Go** | [ossguard-go@${{ needs.validate-tag.outputs.tag }}](https://github.com/kirankotari/ossguard-go/releases/tag/${{ needs.validate-tag.outputs.tag }}) | ![Release](https://img.shields.io/github/v/release/kirankotari/ossguard-go) |
-          | **Node.js** | [ossguard-npm@${{ needs.validate-tag.outputs.tag }}](https://github.com/kirankotari/ossguard-npm/releases/tag/${{ needs.validate-tag.outputs.tag }}) | ![npm](https://img.shields.io/npm/v/ossguard) |
-          NOTES
+          | Implementation | Release | Package |
+          |---------------|---------|---------|
+          | **Python** | [ossguard-python@${TAG}](https://github.com/kirankotari/ossguard-python/releases/tag/${TAG}) | [![PyPI](https://img.shields.io/pypi/v/ossguard)](https://pypi.org/project/ossguard/) |
+          | **Go** | [ossguard-go@${TAG}](https://github.com/kirankotari/ossguard-go/releases/tag/${TAG}) | [![Release](https://img.shields.io/github/v/release/kirankotari/ossguard-go)](https://github.com/kirankotari/ossguard-go/releases) |
+          | **Node.js** | [ossguard-npm@${TAG}](https://github.com/kirankotari/ossguard-npm/releases/tag/${TAG}) | [![npm](https://img.shields.io/npm/v/ossguard)](https://www.npmjs.com/package/ossguard) |
+          EOF
 
-      - name: Create GitHub Release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create "${{ needs.validate-tag.outputs.tag }}" \
+          gh release create "${TAG}" \
             --repo "${{ github.repository }}" \
-            --title "OSSGuard ${{ needs.validate-tag.outputs.version }}" \
+            --title "OSSGuard ${VERSION}" \
             --notes-file release-notes.md
