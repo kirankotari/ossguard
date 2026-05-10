@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="shieldGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#15803d;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="innerGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#16a34a;stop-opacity:0.3" />
+      <stop offset="100%" style="stop-color:#14532d;stop-opacity:0.3" />
+    </linearGradient>
+  </defs>
+
+  <!-- Shield shape -->
+  <path d="M96 12 L168 40 C168 40 172 120 96 180 C20 120 24 40 24 40 Z"
+        fill="url(#shieldGrad)" stroke="#166534" stroke-width="3" stroke-linejoin="round"/>
+
+  <!-- Inner shield highlight -->
+  <path d="M96 28 L154 50 C154 50 157 110 96 162 C35 110 38 50 38 50 Z"
+        fill="url(#innerGrad)" stroke="none"/>
+
+  <!-- Checkmark -->
+  <polyline points="62,96 86,120 132,72"
+            fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Lock keyhole circle (top of shield) -->
+  <circle cx="96" cy="56" r="8" fill="#ffffff" opacity="0.4"/>
+</svg>
