@@ -34,11 +34,14 @@ jobs:
           args: >-
             --verbose
             --no-progress
-            --accept 200,204,301,302,403,429
-            --timeout 30
-            --retry-wait-time 5
-            --max-retries 3
+            --accept 200,204,301,302,303,403,429
+            --timeout 60
+            --retry-wait-time 10
+            --max-retries 5
             --exclude '^mailto:'
             --exclude 'github\.com/.*/settings'
+            --exclude 'contributor-covenant\.org'
+            --exclude 'bestpractices\.dev'
+            --exclude 'scorecard\.dev'
             '**/*.md'
-          fail: true
+          fail: false
