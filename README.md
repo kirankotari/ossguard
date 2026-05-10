@@ -27,6 +27,7 @@ OSSGuard scans any project and tells you exactly what [OpenSSF](https://openssf.
   - [Compliance & Generation](#compliance--generation)
 - [Real-World Results](#real-world-results)
 - [JSON Output for CI](#json-output-for-ci)
+- [GitHub Action](#github-action)
 - [Implementations](#implementations)
 - [Documentation](#documentation)
 - [How OSSGuard Relates to OpenSSF](#how-ossguard-relates-to-openssf)
@@ -193,6 +194,63 @@ $ ossguard scan --json .
 > *Real output from [psf/requests](https://github.com/psf/requests)*
 
 See [docs/ci-integration.md](docs/ci-integration.md) for GitHub Actions, GitLab CI, and quality-gate examples.
+
+## GitHub Action
+
+OSSGuard also ships as a **GitHub Action** that automatically reviews every pull request for OpenSSF compliance and posts results directly on the PR.
+
+Add `.github/workflows/ossguard.yml` to any repository:
+
+```yaml
+name: OSSGuard
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  pull-requests: write
+  statuses: write
+
+jobs:
+  security-review:
+    name: Security Review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: kirankotari/ossguard-app@main
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### What You'll See on Your PR
+
+OSSGuard posts a comment with a security review table and sets a commit status check:
+
+> **OSSGuard Security Review**
+>
+> | Check | Status | Severity | Details |
+> |-------|--------|----------|---------|
+> | Dependency Pinning | :warning: Warn | Warning | 2 action(s) not pinned to SHA |
+> | Security Policy | :white_check_mark: Pass | Warning | SECURITY.md found |
+> | License | :white_check_mark: Pass | Warning | Apache-2.0 license detected |
+> | Secrets Scan | :white_check_mark: Pass | Error | No secrets detected in PR diff |
+> | CodeQL / SAST | :white_check_mark: Pass | Warning | CodeQL configured |
+> | Branch Protection | :white_check_mark: Pass | Info | Branch protection enabled |
+> | Dependency Review | :white_check_mark: Pass | Info | Dependabot configured |
+>
+> **6 passed** | **1 warning**
+
+The status check shows:
+- **Green** (success) — all checks passed
+- **Yellow** (neutral) — warnings found, not blocking
+- **Red** (failure) — critical issues (e.g., leaked secrets)
+
+See [ossguard-app](https://github.com/kirankotari/ossguard-app) for configuration options and the full list of 8 analyzers.
 
 ## Implementations
 
