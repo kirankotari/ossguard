@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon.svg" width="120" height="120" alt="OSSGuard"><br>
+  <img src="assets/ossguard.png" width="140" height="140" alt="OSSGuard"><br>
   <strong>OSSGuard</strong><br>
   <em>One CLI to guard any OSS project with OpenSSF security best practices</em>
 </p>
